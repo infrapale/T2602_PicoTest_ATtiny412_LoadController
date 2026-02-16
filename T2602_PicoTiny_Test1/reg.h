@@ -22,6 +22,20 @@ typedef enum
     REG_EEPROM_BUFF     = REG_RESERVED_1 + 15
 } reg_data_et;
 
+typedef enum 
+{
+    SLEEP_INACTIVE = 0,
+    SLEEP_ACTIVATED,
+    SLEEP_ZZZZZ,
+} sleep_state_et;
+
+typedef enum
+{
+    POWER1_BM = 0x01,
+    POWER2_BM = 0x02
+} power_bm_et;
+
+
 void reg_initialize(void);
 
 

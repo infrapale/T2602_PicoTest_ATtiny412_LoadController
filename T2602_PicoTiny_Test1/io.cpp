@@ -1,65 +1,92 @@
-#ifndef __IO_H__
-#define __IO_H__
-
+#include <Arduino.h>
+#include "atask.h"
 #include "main.h"
+#include "io.h"
 
-#define SerialTFT       Serial1
-#define T2601_PICO_RFM69
-
-#define RFM69_CS      17
-#define RFM69_INT     21
-#define RFM69_RST     20
-
-// LED Definitions
-#define LED_NBR_OF      2
-
-#define PIN_TX0         (0u)
-#define PIN_RX0         (1u)
-
-#define PIN_I2C1_SDA    (2u)
-#define PIN_I2C1_SCL    (3u)
-
-#define PIN_I2C0_SDA    (4u)
-#define PIN_I2C0_SCL    (5u)
-
-// #define PIN_TX1         (4u)
-// #define PIN_RX1         (5u)
-
-#define PIN_LED_RED     (6u)
-#define PIN_LED_BLUE    (7u)
-
-#define PIN_DIP_SW1     (8u)
-#define PIN_DIP_SW2     (9u)
-#define PIN_DIP_SW3     (10u)
-#define PIN_DIP_SW4     (11u)
-#define PIN_DIP_SW5     (12u)
-#define PIN_DIP_SW6     (13u)
-#define PIN_DIP_SW7     (14u)
-#define PIN_DIP_SW8     (15u)
-#define PIN_RFM_MISO    (16u)
-#define PIN_RFM_CS      (17u)
-#define PIN_RFM_SCK     (18u)
-#define PIN_RFM_MOSI    (19u)
-#define PIN_RFM_RESET   (20u)
-#define PIN_RFM_IRQ     (21u)
-#define PIN_RUN_RFM     (22u)
-#define PIN_LDR_AN      (26u)
-#define PIN_ABTN        (27u)
-
-
-
-typedef enum
+typedef struct
 {
-    LED_INDX_RED =0,
-    LED_INDX_BLUE,
-    LED_INDX_NBR_OF
-} led_index_et;
+  uint8_t pin;
+  uint32_t pattern;
+} led_st;
 
-void io_initialize(void);
+typedef struct
+{
+  uint8_t pattern_bit;
+  uint8_t switches;
+  uint8_t tindx;
+} io_ctrl_st;
 
-void io_led_flash(led_index_et led_indx, uint16_t nbr_ticks );
+io_ctrl_st io_ctrl;
 
-void io_run_100ms(void);
+led_st led[COLOR_NBR_OF] =
+{
+    {PIN_LED_RED, 0},
+    {PIN_LED_YELLOW, 0},
+    {PIN_LED_BLUE, 0},
+};
+
+const uint32_t led_pattern[BLINK_NBR_OF] = 
+{
+    0b0000000000000000,
+    0b1111111111111111,
+    0b1000000000000000,
+    0b1000000100000000,
+    0b1001001001001000,
+    0b1111111100000000,
+    0b1111000011110000,
+    0b1100110011001100,
+    0b1111000000100000,
+    0b1111000010001000,
+    0b1111001010101010,
+    0b1111001100110000,
 
 
-#endif
+};
+
+void io_task(void);
+//                                  123456789012345   ival  next  state  prev  cntr flag  call backup
+atask_st io_task_handle       =   {"I/O Task       ", 100,     0,     0,  255,    0,  1,  io_task };
+
+void io_initialize(void)
+{
+  analogReadResolution(12);
+  //RFM95 Reset
+  pinMode(PIN_RFM_RESET, OUTPUT);
+  digitalWrite(PIN_RFM_RESET, HIGH);
+
+  #if BOARD == BOARD_T2504_PICO_RFM95_80x70
+  
+  io_ctrl.pattern_bit = 0;
+  for (uint8_t i = COLOR_RED; i <= COLOR_BLUE; i++)
+  {
+    pinMode(led[i].pin, OUTPUT);
+    digitalWrite(led[i].pin, LOW);
+  } 
+  #endif
+}
+void io_task_initialize(void)
+{
+    io_ctrl.tindx =  atask_add_new(&io_task_handle);
+}
+
+
+void io_led_flash(color_et color, blink_et bindx)
+{
+  led[color].pattern = led_pattern[bindx];
+}
+
+void io_task(void)
+{
+
+  #if BOARD == BOARD_T2504_PICO_RFM95_80x70
+  uint32_t patt = 1UL << io_ctrl.pattern_bit;
+  for (uint8_t i = COLOR_RED; i <= COLOR_BLUE; i++)
+  {
+    if ((led[i].pattern & patt) != 0)
+        digitalWrite(led[i].pin, HIGH);
+    else  
+        digitalWrite(led[i].pin, LOW);
+  } 
+  if (++io_ctrl.pattern_bit >= 16) io_ctrl.pattern_bit = 0;
+  #endif
+}

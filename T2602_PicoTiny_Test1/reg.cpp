@@ -27,6 +27,7 @@ uint8_t reg_get_item_len(uint8_t reg_addr)
         case REG_LOAD_SW:       len = 1; break;
         case REG_EEPROM_STATE:  len = 1; break;
         case REG_EEPROM_ADDR:   len = 1; break;
+        case REG_SLEEP_STATE:   len = 1; break;
         case REG_CLR_WD:        len = 1; break;
         case REG_RESERVED_1:    len = 0; break;
         case REG_EEPROM_BUFF:   len = 16; break;

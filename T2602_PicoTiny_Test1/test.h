@@ -2,6 +2,8 @@
 #define __TEST_H__
 
 
-void test_load_sw_on_off(void);
+void test_initialize(void);
+
+//void test_task(void);
 
 #endif
